@@ -5,7 +5,8 @@
   "main": "app.js",
   "dependencies": {
     "express": "^4.17.1",
-    "simple-node-logger": "^18.12.23"
+    "simple-node-logger": "^18.12.23",
+    "winston": "^3.2.1"
   },
   "devDependencies": {},
   "scripts": {

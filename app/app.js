@@ -1,8 +1,23 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    winston = require('winston'),
     app = express(),
     port = process.env.PORT || 3081,
     message_log = {};
+
+    const log = winston.createLogger({
+        level: 'info',
+        format: winston.format.json(),
+        defaultMeta: { service: 'user-service' },
+        transports: [
+          //
+          // - Write to all logs with level `info` and below to `combined.log` 
+          // - Write all logs error (and below) to `error.log`.
+          //
+          new winston.transports.File({ filename: 'error.log', level: 'error' }),
+          new winston.transports.File({ filename: 'combined.log' })
+        ]
+      });
 
 app.use(bodyParser.json());
 
@@ -11,14 +26,15 @@ app.get('*', function (req, res) {
 });
 
 function handleGithub(req, user, repo) {
+    log.log('info', 'Received github request from '+use+'/'+repo);
     let body = req.body;
-    console.log(req.url);
-    message_log[req.url] = body.json;
+    message_log[use+'/'+repo] = body.json;
 
     return 200;
 }
 
 app.post('*', function (req, res) {
+    log.log('info', 'Received post request to '+req.url);
     let parts = req.url.split('/');
     if(parts.length >= 3 && parts[0] == 'github'){
         res.statusCode = handleGithub(req, parts[1], parts[2]);
@@ -30,9 +46,9 @@ app.post('*', function (req, res) {
 
 var server = app.listen(port, function () {
 
-    var host = server.address().address
-    var port = server.address().port
+    var host = server.address().address;
+    var port = server.address().port;
 
-    console.log('Webhook app listening at http://%s:%s', host, port)
+    log.log('info', 'Webhook app listening at http://'+host+':'+port);
 
 });
