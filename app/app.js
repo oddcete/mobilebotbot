@@ -8,7 +8,7 @@ var express = require('express'),
     message_log = {};
 
     const log = winston.createLogger({
-        level: 'info',
+        level: 'debug',
         format: winston.format.json(),
         defaultMeta: { service: 'user-service' },
         transports: [
@@ -31,7 +31,7 @@ function send_mobile_update(commits) {
     let text = "Mobilebot on päivitetty.";
     for (let i = 0; i < commits.length; i++) {
         let c = commits[i];
-        text.append("1. "+c.message+"\n");
+        text = text+("1. "+c.message+"\n");
     }
 
     let body = {
@@ -40,7 +40,7 @@ function send_mobile_update(commits) {
     };
 
     let options = {
-        host: "https://api.telegram.org",
+        host: "api.telegram.org",
         path: "/bot"+config.telegram.mobilebotbot.token+"/sendMessage",
         method: "POST",
         headers: {
@@ -49,6 +49,7 @@ function send_mobile_update(commits) {
     };
 
     let req = https.request(options, function(res){
+		console.log("Telegram API response code ",res.statusCode);
         var responseString = "";
         res.on("data", function (data) {
             responseString += data;
@@ -64,11 +65,12 @@ function send_mobile_update(commits) {
 function handleGithub(req, user, repo) {
     log.log('info', 'Received github request from '+user+'/'+repo);
     let body = req.body;
-    message_log[user+'/'+repo] = body.json;
-
-    let repo_name = body.json.repository.full_name;
-    if(repo_name == "toppeh/mobilebot" && body.json.ref == "refs/heads/master") {
-        send_mobile_update(body.json.commits);
+    message_log[user+'/'+repo] = body;
+	
+    let repo_name = body.repository.full_name;
+	log.log('debug', 'repo name = '+repo_name+', ref = '+body.ref);
+    if(true || repo_name == "toppeh/mobilebot" && body.ref == "refs/heads/master") {
+        send_mobile_update(body.commits);
     }
 
     return 200;
@@ -76,7 +78,8 @@ function handleGithub(req, user, repo) {
 
 app.post('*', function (req, res) {
     log.log('info', 'Received post request to '+req.url);
-    let parts = req.url.split('/').filter(i=>i);
+    let parts = req.url.split('/').filter(i => i);
+	log.log('debug', (parts));
     if(parts.length >= 3 && parts[0] == 'github'){
         res.statusCode = handleGithub(req, parts[1], parts[2]);
     } else {
@@ -93,3 +96,25 @@ var server = app.listen(port, function () {
     log.log('info', 'Webhook app listening at http://'+host+':'+port);
 
 });
+
+console.log("App listening on port "+port);
+let options = {
+	host: "api.telegram.org",
+	path: "/bot"+config.telegram.mobilebotbot.token+"/getMe",
+	method: "GET",
+	headers: {
+	}
+};
+
+let req = https.request(options, function(res){
+	console.log("Telegram API response code ",res.statusCode);
+	var responseString = "";
+	res.on("data", function (data) {
+		responseString += data;
+		});
+	res.on("end", function () {
+		console.log(responseString); 
+	});
+});
+
+req.write("");
