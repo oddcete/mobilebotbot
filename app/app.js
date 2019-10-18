@@ -1,6 +1,7 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
     winston = require('winston'),
+    https = require('https'),
     app = express(),
     port = process.env.PORT || 3081,
     message_log = {};
@@ -25,10 +26,49 @@ app.get('*', function (req, res) {
     res.json(message_log);
 });
 
+function send_mobile_update(commits) {
+    let text = "Mobilebot on päivitetty.";
+    for (let i = 0; i < commits.length; i++) {
+        let c = commits[i];
+        text.append("1. "+c.message+"\n");
+    }
+
+    let body = {
+        chat_id: config.telegram.mobile_id,
+        text: text,
+    };
+
+    let options = {
+        host: "https://api.telegram.org",
+        path: "/bot"+config.telegram.mobilebotbot.token+"/sendMessage",
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+
+    let req = https.request(options, function(res){
+        var responseString = "";
+        res.on("data", function (data) {
+            responseString += data;
+            });
+        res.on("end", function () {
+            console.log(responseString); 
+        });
+    });
+
+    req.write(body);
+}
+
 function handleGithub(req, user, repo) {
     log.log('info', 'Received github request from '+use+'/'+repo);
     let body = req.body;
     message_log[use+'/'+repo] = body.json;
+
+    let repo_name = body.json.repository.full_name;
+    if(repo_name == "toppeh/mobilebot" && body.json.ref == "refs/heads/master") {
+        send_mobile_update(body.json.commits);
+    }
 
     return 200;
 }
