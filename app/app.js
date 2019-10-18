@@ -2,6 +2,7 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     winston = require('winston'),
     https = require('https'),
+    config = require('./config'),
     app = express(),
     port = process.env.PORT || 3081,
     message_log = {};
@@ -57,7 +58,7 @@ function send_mobile_update(commits) {
         });
     });
 
-    req.write(body);
+    req.write(JSON.stringify(body));
 }
 
 function handleGithub(req, user, repo) {
