@@ -62,9 +62,9 @@ function send_mobile_update(commits) {
 }
 
 function handleGithub(req, user, repo) {
-    log.log('info', 'Received github request from '+use+'/'+repo);
+    log.log('info', 'Received github request from '+user+'/'+repo);
     let body = req.body;
-    message_log[use+'/'+repo] = body.json;
+    message_log[user+'/'+repo] = body.json;
 
     let repo_name = body.json.repository.full_name;
     if(repo_name == "toppeh/mobilebot" && body.json.ref == "refs/heads/master") {
@@ -76,7 +76,7 @@ function handleGithub(req, user, repo) {
 
 app.post('*', function (req, res) {
     log.log('info', 'Received post request to '+req.url);
-    let parts = req.url.split('/');
+    let parts = req.url.split('/').filter(i=>i);
     if(parts.length >= 3 && parts[0] == 'github'){
         res.statusCode = handleGithub(req, parts[1], parts[2]);
     } else {
